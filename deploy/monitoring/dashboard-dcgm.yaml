@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-dcgm
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  dcgm.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "schemaVersion": 38,
+      "title": "NVIDIA DCGM Exporter",
+      "uid": "dcgm-exporter",
+      "tags": ["gpu", "nvidia"],
+      "timezone": "browser",
+      "time": {"from": "now-30m", "to": "now"},
+      "refresh": "10s",
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "GPU Utilization (%)",
+          "id": 1,
+          "gridPos": {"x":0,"y":0,"w":12,"h":8},
+          "targets":[{"expr":"DCGM_FI_DEV_GPU_UTIL","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"percent","min":0,"max":100}}
+        },
+        {
+          "type": "timeseries",
+          "title": "GPU Memory Used (MiB)",
+          "id": 2,
+          "gridPos": {"x":12,"y":0,"w":12,"h":8},
+          "targets":[{"expr":"DCGM_FI_DEV_FB_USED","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"mbytes"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "GPU Temperature (°C)",
+          "id": 3,
+          "gridPos": {"x":0,"y":8,"w":12,"h":8},
+          "targets":[{"expr":"DCGM_FI_DEV_GPU_TEMP","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"celsius"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "GPU Power Draw (W)",
+          "id": 4,
+          "gridPos": {"x":12,"y":8,"w":12,"h":8},
+          "targets":[{"expr":"DCGM_FI_DEV_POWER_USAGE","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"watt"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "SM Clock (MHz)",
+          "id": 5,
+          "gridPos": {"x":0,"y":16,"w":12,"h":7},
+          "targets":[{"expr":"DCGM_FI_DEV_SM_CLOCK","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"hertz"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "Memory Clock (MHz)",
+          "id": 6,
+          "gridPos": {"x":12,"y":16,"w":12,"h":7},
+          "targets":[{"expr":"DCGM_FI_DEV_MEM_CLOCK","legendFormat":"{{Hostname}} gpu{{gpu}}"}],
+          "fieldConfig":{"defaults":{"unit":"hertz"}}
+        }
+      ],
+      "templating":{"list":[]}
+    }

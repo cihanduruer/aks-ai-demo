@@ -1,0 +1,46 @@
+{{- if .Values.simulator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-simulator
+  namespace: {{ .Values.namespace }}
+  labels: { app: device-simulator }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: device-simulator } }
+  template:
+    metadata:
+      labels:
+        app: device-simulator
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: aidemo-worker
+      containers:
+        - name: simulator
+          image: "{{ .Values.image.registry }}/{{ .Values.simulator.image.repo }}:{{ .Values.simulator.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "aidemo.envCommon" . | nindent 12 }}
+            - name: DEVICE_COUNT
+              value: "{{ .Values.simulator.deviceCount }}"
+            - name: TICK_SECONDS
+              value: "{{ .Values.simulator.tickSeconds }}"
+            - name: SIM_SPEED
+              value: "{{ .Values.simulator.simSpeed | default 1 }}"
+          ports:
+            - { name: metrics, containerPort: 9090 }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits:   { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: device-simulator
+  namespace: {{ .Values.namespace }}
+  labels: { app: device-simulator }
+spec:
+  selector: { app: device-simulator }
+  ports:
+    - { name: metrics, port: 9090, targetPort: metrics }
+{{- end }}

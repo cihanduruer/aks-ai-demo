@@ -1,0 +1,27 @@
+# NVIDIA dcgm-exporter values — runs only on GPU nodes (gpurecon pool)
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  additionalLabels:
+    release: kps
+
+nodeSelector:
+  workload: gpu-recon
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Equal
+    value: present
+    effect: NoSchedule
+  - key: sku
+    operator: Equal
+    value: gpu
+    effect: NoSchedule
+
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits:   { cpu: 500m, memory: 512Mi }
+
+extraEnv:
+  - name: DCGM_EXPORTER_LISTEN
+    value: ":9400"

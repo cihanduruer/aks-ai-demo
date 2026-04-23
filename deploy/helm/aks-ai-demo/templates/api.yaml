@@ -1,0 +1,48 @@
+{{- if .Values.api.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aidemo-api
+  namespace: {{ .Values.namespace }}
+  labels: { app: aidemo-api }
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector: { matchLabels: { app: aidemo-api } }
+  template:
+    metadata:
+      labels:
+        app: aidemo-api
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: aidemo-worker
+      containers:
+        - name: api
+          image: "{{ .Values.image.registry }}/{{ .Values.api.image.repo }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "aidemo.envCommon" . | nindent 12 }}
+            - name: FORECAST_QUEUE
+              value: {{ .Values.serviceBus.forecastQueue | quote }}
+            - name: RL_QUEUE
+              value: {{ .Values.serviceBus.rlQueue | quote }}
+          ports:
+            - { name: http, containerPort: 8000 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits:   { cpu: "1",    memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aidemo-api
+  namespace: {{ .Values.namespace }}
+  labels: { app: aidemo-api }
+spec:
+  type: {{ .Values.api.service.type }}
+  selector: { app: aidemo-api }
+  ports:
+    - { name: http, port: {{ .Values.api.service.port }}, targetPort: http }
+{{- end }}

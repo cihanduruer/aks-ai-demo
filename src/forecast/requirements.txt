@@ -1,0 +1,12 @@
+azure-identity==1.19.0
+azure-servicebus==7.12.3
+azure-storage-blob==12.23.1
+psycopg[binary]==3.2.3
+prometheus-client==0.21.1
+numpy==1.26.4
+torch==2.5.1
+# Chronos-2 (encoder-only foundation model, native multivariate / covariates).
+# This brings its own compatible transformers (>=4.50) and is incompatible with
+# the older chronos-bolt runtime, so we no longer pin transformers manually.
+chronos-forecasting>=2.0.0,<3.0.0
+einops>=0.7.0

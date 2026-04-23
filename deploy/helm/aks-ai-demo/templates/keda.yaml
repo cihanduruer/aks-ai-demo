@@ -1,0 +1,55 @@
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: aidemo-sb-auth
+  namespace: {{ .Values.namespace }}
+spec:
+  podIdentity:
+    provider: azure-workload
+    identityId: {{ .Values.workloadIdentity.clientId | quote }}
+---
+{{- if .Values.forecast.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: forecast-scaler
+  namespace: {{ .Values.namespace }}
+spec:
+  scaleTargetRef:
+    name: forecast-worker
+  pollingInterval: 15
+  cooldownPeriod: 60
+  minReplicaCount: {{ .Values.forecast.minReplicas }}
+  maxReplicaCount: {{ .Values.forecast.maxReplicas }}
+  triggers:
+    - type: azure-servicebus
+      metadata:
+        namespace: {{ .Values.serviceBus.namespace | quote }}
+        queueName: {{ .Values.serviceBus.forecastQueue | quote }}
+        messageCount: "{{ .Values.forecast.queueLength }}"
+      authenticationRef:
+        name: aidemo-sb-auth
+{{- end }}
+---
+{{- if .Values.rl.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: rl-scaler
+  namespace: {{ .Values.namespace }}
+spec:
+  scaleTargetRef:
+    name: rl-worker
+  pollingInterval: 15
+  cooldownPeriod: 60
+  minReplicaCount: {{ .Values.rl.minReplicas }}
+  maxReplicaCount: {{ .Values.rl.maxReplicas }}
+  triggers:
+    - type: azure-servicebus
+      metadata:
+        namespace: {{ .Values.serviceBus.namespace | quote }}
+        queueName: {{ .Values.serviceBus.rlQueue | quote }}
+        messageCount: "{{ .Values.rl.queueLength }}"
+      authenticationRef:
+        name: aidemo-sb-auth
+{{- end }}

@@ -1,0 +1,9 @@
+azure-identity==1.19.0
+azure-servicebus==7.12.3
+azure-storage-blob==12.23.1
+psycopg[binary]==3.2.3
+prometheus-client==0.21.1
+numpy==1.26.4
+gymnasium==1.0.0
+stable-baselines3==2.4.0
+torch==2.5.1

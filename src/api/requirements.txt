@@ -1,0 +1,8 @@
+azure-identity==1.19.0
+azure-servicebus==7.12.3
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+psycopg[binary]==3.2.3
+prometheus-client==0.21.1
+pydantic==2.9.2
+kubernetes==31.0.0

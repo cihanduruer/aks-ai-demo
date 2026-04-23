@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.envrc
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!*.example.tfvars
+.kube/
+.DS_Store
+*.egg-info/
+build/
+dist/

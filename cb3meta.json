@@ -1,0 +1,42 @@
+{
+  "agentConfiguration": {
+    "cpu": 2
+  },
+  "agentPoolName": null,
+  "createTime": "2026-04-22T22:14:18.099947+00:00",
+  "customRegistries": null,
+  "finishTime": "2026-04-22T22:17:00.911006+00:00",
+  "id": "/subscriptions/4f0fd422-0201-4029-9c73-5f1d57aeed13/resourceGroups/aks-ai-demo/providers/Microsoft.ContainerRegistry/registries/aidemoacrm23gd3/runs/cb3",
+  "imageUpdateTrigger": null,
+  "isArchiveEnabled": false,
+  "lastUpdatedTime": "2026-04-22T22:17:00+00:00",
+  "logArtifact": null,
+  "name": "cb3",
+  "outputImages": null,
+  "platform": {
+    "architecture": "amd64",
+    "os": "linux",
+    "variant": null
+  },
+  "provisioningState": "Succeeded",
+  "resourceGroup": "aks-ai-demo",
+  "runErrorMessage": "failed during run, err: exit status 1",
+  "runId": "cb3",
+  "runType": "QuickRun",
+  "sourceRegistryAuth": null,
+  "sourceTrigger": null,
+  "startTime": "2026-04-22T22:14:18.975727+00:00",
+  "status": "Failed",
+  "systemData": {
+    "createdAt": null,
+    "createdBy": null,
+    "createdByType": null,
+    "lastModifiedAt": "2026-04-22T22:14:18.008082+00:00",
+    "lastModifiedBy": "info@aule.nl",
+    "lastModifiedByType": "User"
+  },
+  "task": null,
+  "timerTrigger": null,
+  "type": "Microsoft.ContainerRegistry/registries/runs",
+  "updateTriggerToken": null
+}

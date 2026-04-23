@@ -1,0 +1,44 @@
+{{- if .Values.forecast.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forecast-worker
+  namespace: {{ .Values.namespace }}
+  labels: { app: forecast-worker }
+spec:
+  selector: { matchLabels: { app: forecast-worker } }
+  template:
+    metadata:
+      labels:
+        app: forecast-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: aidemo-worker
+      nodeSelector:
+        {{- toYaml .Values.forecast.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.forecast.tolerations | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.registry }}/{{ .Values.image.forecastRepo }}:{{ .Values.image.forecastTag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "aidemo.envCommon" . | nindent 12 }}
+            - name: SERVICEBUS_QUEUE
+              value: {{ .Values.serviceBus.forecastQueue | quote }}
+          ports:
+            - { name: metrics, containerPort: 9090 }
+          resources:
+            {{- toYaml .Values.forecast.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forecast-worker
+  namespace: {{ .Values.namespace }}
+  labels: { app: forecast-worker }
+spec:
+  selector: { app: forecast-worker }
+  ports:
+    - { name: metrics, port: 9090, targetPort: metrics }
+{{- end }}

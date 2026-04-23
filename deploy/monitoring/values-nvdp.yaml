@@ -1,0 +1,26 @@
+# nvidia-device-plugin with time-slicing
+# Advertises 4 logical GPUs per physical A100 so 4 pods can share it.
+
+nodeSelector:
+  workload: gpu-recon
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Equal
+    value: present
+    effect: NoSchedule
+
+# Time-slicing: split each GPU into N replicas
+config:
+  map:
+    default: |-
+      version: v1
+      flags:
+        migStrategy: none
+      sharing:
+        timeSlicing:
+          renameByDefault: false
+          failRequestsGreaterThanOne: false
+          resources:
+            - name: nvidia.com/gpu
+              replicas: 4

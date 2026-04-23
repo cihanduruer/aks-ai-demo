@@ -1,0 +1,108 @@
+namespace: aks-ai-demo
+
+image:
+  registry: ""        # set to ACR login server
+  forecastRepo: aidemo/forecast
+  rlRepo: aidemo/rl
+  forecastTag: "0.1.1"
+  rlTag: "0.1.1"
+  pullPolicy: IfNotPresent
+
+workloadIdentity:
+  clientId: ""        # UAMI client id
+  tenantId: ""
+
+serviceBus:
+  fqdn: ""            # ns.servicebus.windows.net
+  namespace: ""       # short name (used by KEDA scaler)
+  forecastQueue: forecast-jobs
+  rlQueue: rl-jobs
+
+postgres:
+  host: ""
+  database: aidemo
+  user: ""            # AAD principal name (UAMI name)
+  sslmode: require
+
+storage:
+  accountUrl: ""
+  container: artifacts
+
+forecast:
+  enabled: true
+  maxReplicas: 2
+  minReplicas: 0
+  queueLength: 1
+  resources:
+    requests:
+      cpu: "2"
+      memory: 8Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: "8"
+      memory: 32Gi
+      nvidia.com/gpu: 1
+  nodeSelector:
+    workload: gpu-recon
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
+
+rl:
+  enabled: true
+  # GPU is time-sliced into 4 logical devices via nvidia-device-plugin,
+  # so we run up to 4 RL jobs concurrently on a single A100 node.
+  maxReplicas: 4
+  minReplicas: 0
+  queueLength: 1
+  resources:
+    requests:
+      cpu: "4"
+      memory: 6Gi
+      nvidia.com/gpu: 1
+    limits:
+      cpu: "5"
+      memory: 12Gi
+      nvidia.com/gpu: 1
+  nodeSelector:
+    workload: gpu-recon
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Equal
+      value: present
+      effect: NoSchedule
+
+simulator:
+  enabled: true
+  deviceCount: 8
+  tickSeconds: 5
+  # Wall-clock seconds per simulated minute multiplier; 1 = realtime, >1 speeds up sim time.
+  simSpeed: 1
+  image:
+    repo: aidemo/simulator
+    tag: "0.1.1"
+
+api:
+  enabled: true
+  replicas: 1
+  image:
+    repo: aidemo/api
+    tag: "0.1.2"
+  service:
+    type: ClusterIP
+    port: 8000
+
+web:
+  enabled: true
+  replicas: 1
+  image:
+    repo: aidemo/web
+    tag: "0.1.6"
+  service:
+    type: LoadBalancer
+    port: 80
+
+serviceMonitor:
+  enabled: true       # set false if Prometheus Operator CRDs are missing

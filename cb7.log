@@ -1,0 +1,143 @@
+2026/04/22 22:22:39 Downloading source code...
+2026/04/22 22:22:40 Finished downloading source code
+2026/04/22 22:22:40 Using acb_vol_08168311-905e-4f41-aa9e-a7264b935152 as the home volume
+2026/04/22 22:22:40 Setting up Docker configuration...
+2026/04/22 22:22:41 Successfully set up Docker configuration
+2026/04/22 22:22:41 Logging in to registry: aidemoacrm23gd3.azurecr.io
+2026/04/22 22:22:42 Successfully logged into aidemoacrm23gd3.azurecr.io
+2026/04/22 22:22:42 Executing step ID: build. Timeout(sec): 28800, Working directory: '', Network: ''
+2026/04/22 22:22:42 Scanning for dependencies...
+2026/04/22 22:22:42 Successfully scanned dependencies
+2026/04/22 22:22:42 Launching container with name: build
+Sending build context to Docker daemon  481.8kB
+Step 1/20 : FROM node:20-alpine AS deps
+20-alpine: Pulling from library/node
+6a0ac1617861: Pulling fs layer
+4feea04c1543: Pulling fs layer
+b2cbbfe903b0: Pulling fs layer
+fff4e2c1b189: Pulling fs layer
+fff4e2c1b189: Waiting
+b2cbbfe903b0: Verifying Checksum
+b2cbbfe903b0: Download complete
+6a0ac1617861: Verifying Checksum
+6a0ac1617861: Download complete
+4feea04c1543: Verifying Checksum
+4feea04c1543: Download complete
+6a0ac1617861: Pull complete
+fff4e2c1b189: Verifying Checksum
+fff4e2c1b189: Download complete
+4feea04c1543: Pull complete
+b2cbbfe903b0: Pull complete
+fff4e2c1b189: Pull complete
+Digest: sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+Status: Downloaded newer image for node:20-alpine
+ ---> 11cedc39e663
+Step 2/20 : WORKDIR /app
+ ---> Running in 27542813a3d8
+Removing intermediate container 27542813a3d8
+ ---> c72e4c2bd2ac
+Step 3/20 : COPY web/package.json ./package.json
+ ---> e919be1f7faf
+Step 4/20 : RUN npm install --no-audit --no-fund
+ ---> Running in 14566d54d022
+
+[91mnpm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+[0m[91mnpm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+[0m[91mnpm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+[0m[91mnpm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+[0m[91mnpm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+[0m[91mnpm warn deprecated glob@10.3.10: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+[0m[91mnpm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+[0m[91mnpm warn deprecated next@14.2.18: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/security-update-2025-12-11 for more details.
+[0m
+added 447 packages in 42s
+[91mnpm notice
+npm notice New major version of npm available! 10.8.2 -> 11.13.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.13.0
+npm notice To update run: npm install -g npm@11.13.0
+npm notice
+[0mRemoving intermediate container 14566d54d022
+ ---> d748a23b120e
+Step 5/20 : FROM node:20-alpine AS builder
+20-alpine: Pulling from library/node
+Digest: sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+Status: Image is up to date for node:20-alpine
+ ---> 11cedc39e663
+Step 6/20 : WORKDIR /app
+ ---> Using cache
+ ---> c72e4c2bd2ac
+Step 7/20 : COPY --from=deps /app/node_modules ./node_modules
+
+ ---> 93982e40ff80
+Step 8/20 : COPY web/ .
+ ---> 23bf19d39519
+Step 9/20 : ENV NEXT_TELEMETRY_DISABLED=1
+ ---> Running in e8f9b6468e3a
+Removing intermediate container e8f9b6468e3a
+ ---> 2e5a59adf913
+Step 10/20 : RUN npm run build
+ ---> Running in c562dc01b772
+
+> aks-ai-demo-web@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.18
+
+   Creating an optimized production build ...
+
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/7) ...
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ ✓ Generating static pages (7/7)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    2.36 kB         109 kB
+├ ○ /_not-found                          876 B          88.3 kB
+├ ○ /devices                             2.21 kB         109 kB
+├ ƒ /devices/[id]                        3.16 kB         203 kB
+├ ○ /jobs                                3.49 kB         103 kB
+└ ○ /results                             6.8 kB          207 kB
++ First Load JS shared by all            87.4 kB
+  ├ chunks/117-6d0f06996917fba1.js       31.8 kB
+  ├ chunks/fd9d1056-cfb1945985d48551.js  53.6 kB
+  └ other shared chunks (total)          2 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[91mnpm notice
+npm notice New major version of npm available! 10.8.2 -> 11.13.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.13.0
+npm notice To update run: npm install -g npm@11.13.0
+npm notice
+[0mRemoving intermediate container c562dc01b772
+ ---> 7025be564184
+Step 11/20 : FROM node:20-alpine AS runner
+20-alpine: Pulling from library/node
+Digest: sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+Status: Image is up to date for node:20-alpine
+ ---> 11cedc39e663
+Step 12/20 : WORKDIR /app
+ ---> Using cache
+ ---> c72e4c2bd2ac
+Step 13/20 : ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
+ ---> Running in 5a188588181e
+Removing intermediate container 5a188588181e
+ ---> a9171d346874
+Step 14/20 : RUN addgroup -S app && adduser -S app -G app
+ ---> Running in bcbed9541326
+Removing intermediate container bcbed9541326
+ ---> 88723400cb73
+Step 15/20 : COPY --from=builder /app/public ./public
+COPY failed: stat app/public: file does not exist
+2026/04/22 22:25:04 Container failed during run: build. No retries remaining.
+failed to run step ID: build: exit status 1
+
+Run ID: cb7 failed after 2m25s. Error: failed during run, err: exit status 1

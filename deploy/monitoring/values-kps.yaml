@@ -1,0 +1,63 @@
+# kube-prometheus-stack values for aks-ai-demo
+# Anonymous Grafana viewer + iframe embedding enabled, exposed via LoadBalancer.
+
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+      limits:   { cpu: 1000m, memory: 1Gi }
+    # Discover ServiceMonitors from any namespace
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+alertmanager:
+  enabled: false
+
+grafana:
+  service:
+    type: LoadBalancer
+  adminPassword: "admin"
+  defaultDashboardsTimezone: browser
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Viewer
+    security:
+      allow_embedding: true
+      cookie_samesite: none
+    users:
+      viewers_can_edit: false
+    server:
+      # Avoid root_url surprises behind LB
+      serve_from_sub_path: false
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+  resources:
+    requests: { cpu: 50m, memory: 200Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+# Some kube components on AKS aren't exposed; disable broken scrapes.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+nodeExporter:
+  enabled: true
+
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: true
+  tolerations:
+    - operator: Exists

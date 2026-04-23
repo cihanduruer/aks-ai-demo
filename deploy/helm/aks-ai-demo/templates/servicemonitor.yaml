@@ -1,0 +1,33 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aidemo-workers
+  namespace: {{ .Values.namespace }}
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector: { matchNames: [ {{ .Values.namespace | quote }} ] }
+  selector:
+    matchExpressions:
+      - { key: app, operator: In, values: [forecast-worker, rl-worker, device-simulator] }
+  endpoints:
+    - port: metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aidemo-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector: { matchNames: [ {{ .Values.namespace | quote }} ] }
+  selector:
+    matchLabels: { app: aidemo-api }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+{{- end }}

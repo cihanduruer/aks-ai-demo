@@ -1,0 +1,4 @@
+azure-identity==1.19.0
+psycopg[binary]==3.2.3
+prometheus-client==0.21.1
+numpy==1.26.4

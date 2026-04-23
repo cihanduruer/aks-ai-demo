@@ -1,0 +1,44 @@
+{{- if .Values.rl.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rl-worker
+  namespace: {{ .Values.namespace }}
+  labels: { app: rl-worker }
+spec:
+  selector: { matchLabels: { app: rl-worker } }
+  template:
+    metadata:
+      labels:
+        app: rl-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: aidemo-worker
+      nodeSelector:
+        {{- toYaml .Values.rl.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.rl.tolerations | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.registry }}/{{ .Values.image.rlRepo }}:{{ .Values.image.rlTag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "aidemo.envCommon" . | nindent 12 }}
+            - name: SERVICEBUS_QUEUE
+              value: {{ .Values.serviceBus.rlQueue | quote }}
+          ports:
+            - { name: metrics, containerPort: 9090 }
+          resources:
+            {{- toYaml .Values.rl.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rl-worker
+  namespace: {{ .Values.namespace }}
+  labels: { app: rl-worker }
+spec:
+  selector: { app: rl-worker }
+  ports:
+    - { name: metrics, port: 9090, targetPort: metrics }
+{{- end }}

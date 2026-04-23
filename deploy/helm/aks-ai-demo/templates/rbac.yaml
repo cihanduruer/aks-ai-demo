@@ -1,0 +1,49 @@
+{{- if .Values.api.enabled }}
+# Read-only cluster access for the aidemo-api so the dashboard can show GPU node /
+# worker pod status. Limited to nodes (cluster-scoped) and pods in our namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aidemo-cluster-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aidemo-cluster-reader
+subjects:
+  - kind: ServiceAccount
+    name: aidemo-worker
+    namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aidemo-cluster-reader
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aidemo-pod-reader
+  namespace: {{ .Values.namespace }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aidemo-pod-reader
+  namespace: {{ .Values.namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: aidemo-worker
+    namespace: {{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aidemo-pod-reader
+{{- end }}

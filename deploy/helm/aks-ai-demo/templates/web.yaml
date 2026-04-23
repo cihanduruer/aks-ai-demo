@@ -1,0 +1,39 @@
+{{- if .Values.web.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aidemo-web
+  namespace: {{ .Values.namespace }}
+  labels: { app: aidemo-web }
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector: { matchLabels: { app: aidemo-web } }
+  template:
+    metadata:
+      labels: { app: aidemo-web }
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.image.registry }}/{{ .Values.web.image.repo }}:{{ .Values.web.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: API_TARGET
+              value: "http://aidemo-api:8000"
+          ports:
+            - { name: http, containerPort: 3000 }
+          resources:
+            requests: { cpu: "50m",  memory: "128Mi" }
+            limits:   { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aidemo-web
+  namespace: {{ .Values.namespace }}
+  labels: { app: aidemo-web }
+spec:
+  type: {{ .Values.web.service.type }}
+  selector: { app: aidemo-web }
+  ports:
+    - { name: http, port: {{ .Values.web.service.port }}, targetPort: http }
+{{- end }}
