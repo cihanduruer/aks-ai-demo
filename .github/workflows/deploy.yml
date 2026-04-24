@@ -1,0 +1,91 @@
+name: Deploy to AKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy across all components (e.g. main-abc1234, or 'latest')"
+        required: true
+        default: "latest"
+      components:
+        description: "Comma-separated subset (api,web,simulator,forecast,rl) or 'all'"
+        required: false
+        default: "all"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  AKS_RESOURCE_GROUP: ${{ vars.AKS_RESOURCE_GROUP }}    # e.g. splatix.nl-prod
+  AKS_NAME: ${{ vars.AKS_NAME }}                        # e.g. splatix-prod-aks
+  NAMESPACE: ${{ vars.NAMESPACE }}                      # e.g. aks-ai-demo
+  RELEASE: aks-ai-demo
+
+jobs:
+  deploy:
+    name: Helm upgrade
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_NAME }}
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - name: Build --set flags
+        id: flags
+        run: |
+          tag='${{ inputs.image_tag }}'
+          components='${{ inputs.components }}'
+          flags=""
+          add() { flags="$flags --set $1.image.tag=$tag"; }
+          if [ "$components" = "all" ]; then
+            for c in api web simulator forecast rl; do add "$c"; done
+          else
+            IFS=',' read -ra arr <<< "$components"
+            for c in "${arr[@]}"; do add "$(echo "$c" | xargs)"; done
+          fi
+          echo "flags=$flags" >> "$GITHUB_OUTPUT"
+
+      - name: Helm upgrade
+        run: |
+          helm upgrade "$RELEASE" deploy/helm/aks-ai-demo \
+            --namespace "$NAMESPACE" \
+            --reuse-values \
+            ${{ steps.flags.outputs.flags }} \
+            --wait --timeout 10m
+
+      - name: Rollout status
+        run: |
+          for d in aidemo-api aidemo-web device-simulator forecast-worker rl-worker; do
+            kubectl -n "$NAMESPACE" rollout status deploy/"$d" --timeout=5m || true
+          done
+
+      - name: Summary
+        run: |
+          {
+            echo "## Deployed"
+            echo ""
+            echo "- Cluster: \`$AKS_NAME\` (\`$AKS_RESOURCE_GROUP\`)"
+            echo "- Namespace: \`$NAMESPACE\`"
+            echo "- Tag: \`${{ inputs.image_tag }}\`"
+            echo "- Components: \`${{ inputs.components }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

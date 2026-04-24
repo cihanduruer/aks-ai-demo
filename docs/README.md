@@ -26,6 +26,7 @@ End-to-end Azure / AKS demo that combines:
 | [monitoring.md](monitoring.md) | Prometheus, Grafana, DCGM, ServiceMonitors |
 | [operations.md](operations.md) | Runbooks, gotchas, common failures and fixes |
 | [reference.md](reference.md) | Environment variable matrix, endpoints, scripts, tests |
+| [../.github/README.md](../.github/README.md) | GitHub Actions workflows (CI, image build, AKS deploy, Terraform) |
 
 ## Live endpoints
 

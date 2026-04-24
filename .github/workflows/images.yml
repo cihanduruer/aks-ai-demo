@@ -1,0 +1,135 @@
+name: Build & push images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "web/**"
+      - "deploy/helm/**"
+      - ".github/workflows/images.yml"
+  workflow_dispatch:
+    inputs:
+      components:
+        description: "Comma-separated subset (api,web,simulator,forecast,rl) or 'all'"
+        default: "all"
+        required: false
+      tag:
+        description: "Image tag to push (default: short SHA)"
+        required: false
+
+permissions:
+  id-token: write   # required for Azure OIDC login
+  contents: read
+
+env:
+  ACR_NAME: ${{ vars.ACR_NAME }}                 # e.g. aidemoacrm23gd3
+  IMAGE_TAG: ${{ inputs.tag || github.sha }}
+
+jobs:
+  changes:
+    name: Detect changed components
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      simulator: ${{ steps.filter.outputs.simulator }}
+      forecast: ${{ steps.filter.outputs.forecast }}
+      rl: ${{ steps.filter.outputs.rl }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'src/api/**'
+              - 'src/common/**'
+            web:
+              - 'web/**'
+            simulator:
+              - 'src/devices/**'
+              - 'src/common/**'
+            forecast:
+              - 'src/forecast/**'
+              - 'src/common/**'
+            rl:
+              - 'src/rl/**'
+              - 'src/common/**'
+
+  build:
+    name: Build ${{ matrix.image }}
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: src/api/Dockerfile
+            changed: ${{ needs.changes.outputs.api }}
+          - image: web
+            dockerfile: web/Dockerfile
+            changed: ${{ needs.changes.outputs.web }}
+          - image: simulator
+            dockerfile: src/devices/Dockerfile
+            changed: ${{ needs.changes.outputs.simulator }}
+          - image: forecast
+            dockerfile: src/forecast/Dockerfile
+            changed: ${{ needs.changes.outputs.forecast }}
+          - image: rl
+            dockerfile: src/rl/Dockerfile
+            changed: ${{ needs.changes.outputs.rl }}
+    steps:
+      - name: Decide whether to run
+        id: gate
+        run: |
+          requested='${{ inputs.components || 'auto' }}'
+          if [ "$requested" = "all" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [ "$requested" = "auto" ]; then
+            echo "run=${{ matrix.changed }}" >> "$GITHUB_OUTPUT"
+          else
+            case ",$requested," in
+              *",${{ matrix.image }},"*) echo "run=true" >> "$GITHUB_OUTPUT" ;;
+              *) echo "run=false" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        if: steps.gate.outputs.run == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: ACR login
+        if: steps.gate.outputs.run == 'true'
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Set up Buildx
+        if: steps.gate.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push
+        if: steps.gate.outputs.run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/aidemo/${{ matrix.image }}:${{ env.IMAGE_TAG }}
+            ${{ env.ACR_NAME }}.azurecr.io/aidemo/${{ matrix.image }}:latest
+          cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/aidemo/${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/aidemo/${{ matrix.image }}:buildcache,mode=max
+
+      - name: Summary
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          echo "Pushed \`${{ env.ACR_NAME }}.azurecr.io/aidemo/${{ matrix.image }}:${{ env.IMAGE_TAG }}\`" >> "$GITHUB_STEP_SUMMARY"

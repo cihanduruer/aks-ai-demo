@@ -12,7 +12,7 @@ import uuid
 from typing import Any, Callable
 
 from azure.identity import DefaultAzureCredential
-from azure.servicebus import ServiceBusClient, ServiceBusReceiveMode
+from azure.servicebus import AutoLockRenewer, ServiceBusClient, ServiceBusReceiveMode
 
 from . import db
 from .logging_setup import get_logger
@@ -34,13 +34,16 @@ def run(job_type: str, queue: str, handler: Handler,
     """Process messages until the queue is idle (then exit so KEDA can scale to 0)."""
     db.ensure_schema()
     idle_after = float(os.environ.get("IDLE_EXIT_SECONDS", "30"))
+    # Background thread renews the SB lock so jobs can run longer than the
+    # PT5M queue lock_duration. Cap how long we'll keep renewing per message.
+    max_renewal = int(os.environ.get("LOCK_RENEW_MAX_SECONDS", str(4 * 3600)))
     processed = 0
 
     with _client() as sb, sb.get_queue_receiver(
         queue,
         receive_mode=ServiceBusReceiveMode.PEEK_LOCK,
         max_wait_time=int(idle_after),
-    ) as receiver:
+    ) as receiver, AutoLockRenewer(max_lock_renewal_duration=max_renewal) as renewer:
         log.info("worker started", extra={"queue": queue, "job_type": job_type})
         while True:
             msgs = receiver.receive_messages(max_message_count=1, max_wait_time=int(idle_after))
@@ -48,6 +51,12 @@ def run(job_type: str, queue: str, handler: Handler,
                 log.info("queue idle, exiting", extra={"processed": processed})
                 return
             msg = msgs[0]
+            # Register the message with the auto-renewer immediately so the lock
+            # never expires while the handler is running.
+            try:
+                renewer.register(receiver, msg, max_lock_renewal_duration=max_renewal)
+            except Exception:  # noqa: BLE001
+                log.exception("auto lock renew register failed")
             try:
                 body = b"".join(msg.body) if hasattr(msg, "body") else bytes(msg)
                 payload = json.loads(body.decode("utf-8"))

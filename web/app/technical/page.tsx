@@ -155,7 +155,7 @@ export default function TechnicalPage() {
                 ["Cluster", "splatix-prod-aks (rg splatix.nl-prod)"],
                 ["System pool", "Standard_D2s_v5 ×2"],
                 ["GPU pool", "Standard_NC24ads_A100_v4 (autoscale 0..1, label workload=gpu-recon, taint nvidia.com/gpu=present:NoSchedule)"],
-                ["GPU sharing", "nvidia-device-plugin time-slicing 4 logical GPUs"],
+                ["GPU sharing", "nvidia-device-plugin — time-slicing currently disabled (1 pod = 1 full A100). Can advertise N logical GPUs per physical card via config.sharing.timeSlicing.replicas; trade-off is throughput contention vs higher concurrency. MIG (hardware partitioning) is also supported on A100 but not used here."],
                 ["Add-ons", "OIDC issuer, Workload Identity, KEDA, image cleaner"],
               ]}
             />
