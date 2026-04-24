@@ -99,7 +99,8 @@ web:
   replicas: 1
   image:
     repo: aidemo/web
-    tag: "0.1.6"
+    tag: "0.1.21"
+  grafanaUrl: ""   # e.g. http://52.157.251.61
   service:
     type: LoadBalancer
     port: 80

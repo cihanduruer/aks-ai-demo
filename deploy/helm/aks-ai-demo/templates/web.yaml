@@ -19,6 +19,10 @@ spec:
           env:
             - name: API_TARGET
               value: "http://aidemo-api:8000"
+            {{- with .Values.web.grafanaUrl }}
+            - name: GRAFANA_URL
+              value: {{ . | quote }}
+            {{- end }}
           ports:
             - { name: http, containerPort: 3000 }
           resources:

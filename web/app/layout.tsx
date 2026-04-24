@@ -20,7 +20,7 @@ const nav = [
 
 // Set theme before paint to avoid FOUC
 const themeInitScript = `(() => { try {
-  const t = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const t = localStorage.getItem('theme') || 'light';
   if (t === 'dark') document.documentElement.classList.add('dark');
 } catch (e) {} })();`;
 

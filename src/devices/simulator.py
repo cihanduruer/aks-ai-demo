@@ -198,7 +198,7 @@ def main() -> None:
 
     last = time.time()
     sim_t = time.time()
-    setpoint_refresh_every = 6  # ticks (~30s at 5s tick) — pick up UI changes
+    setpoint_refresh_every = 1  # ticks (~5s) — pick up UI changes fast
     tick = 0
     while True:
         now = time.time()
