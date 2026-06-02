@@ -39,6 +39,7 @@
 | `CHRONOS_MODEL` (`amazon/chronos-2`) | – | – | ✓ | – | – |
 | `REQUIRE_GPU` (`1`) | – | – | ✓ | ✓ | – |
 | `IDLE_EXIT_SECONDS` (`30`) | – | – | ✓ | ✓ | – |
+| `LOCK_RENEW_MAX_SECONDS` (`14400`) | – | – | ✓ | ✓ | – |
 | `METRICS_PORT` (`9090`) | – | ✓ | ✓ | ✓ | – |
 | `DEVICE_COUNT` / `TICK_SECONDS` / `SIM_SPEED` | – | ✓ | – | – | – |
 | `GPU_NODE_LABEL` / `GPU_NAMESPACE` | ✓ | – | – | – | – |
@@ -61,11 +62,17 @@
 
 ```python
 def test_hvac_env_runs():
+    from rl.env import HvacRoomEnv
     env = HvacRoomEnv(seed=0)
     obs, _ = env.reset()
     assert obs.shape == (5,)
+    total = 0.0
     for _ in range(96):
-        env.step(env.action_space.sample())
+        obs, r, term, trunc, _ = env.step(env.action_space.sample())
+        total += r
+        if term or trunc:
+            break
+    assert isinstance(total, float)
 
 def test_metrics_module_imports():
     from common import metrics
@@ -77,7 +84,7 @@ def test_logging_setup():
     log.info("hello", extra={"k": "v"})
 ```
 
-Run with `pytest tests/`.
+Run with `pytest tests/` (or `pytest -q tests/` for quiet output).
 
 ## Image tags (current)
 

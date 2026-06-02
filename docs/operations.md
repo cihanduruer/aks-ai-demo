@@ -19,31 +19,22 @@ Once registered you should see `nvidia.com/gpu: 4` in both `Capacity` and `Alloc
 
 ## 2. RL or forecast job fails with `MessageLockLostError`
 
-Service Bus caps `lockDuration` at **PT5M**. Any job whose worker takes longer than 5 minutes to call `complete_message` will fail when it tries to ack:
+Service Bus caps `lockDuration` at **PT5M**. If `AutoLockRenewer` in `src/common/dispatcher.py` fails to renew the lock in time, the worker will get:
 
 ```
 azure.servicebus.exceptions.MessageLockLostError:
   The lock on the message lock has expired.
 ```
 
-The training itself usually succeeded — the failure is on `receiver.complete_message(msg)` in `src/common/dispatcher.py`.
+`dispatcher.py` already wraps every received message with `AutoLockRenewer(max_lock_renewal_duration=LOCK_RENEW_MAX_SECONDS)` (default 4 h), so jobs can run far beyond PT5M. This error should only appear in edge cases such as:
 
-Mitigations:
+- The pod was OOM-killed or evicted mid-job.
+- `LOCK_RENEW_MAX_SECONDS` was set too low.
+- Network partition between the pod and Service Bus that lasted > PT5M.
 
-| Approach | Image rebuild? | Max job size |
-|----------|----------------|--------------|
-| Bump queue `lockDuration` to PT5M (the max) | No (`az servicebus queue update`) | ≤ 5 min |
-| `AutoLockRenewer(max_lock_renewal_duration=4*3600)` in `dispatcher.py` | Yes — rl + forecast images | Effectively unbounded |
-| `complete_message` immediately, then run training; track state in Postgres | Yes | Unbounded but loses SB redelivery semantics |
+If the error recurs, check pod logs for OOM events and verify `LOCK_RENEW_MAX_SECONDS` is large enough for your job size.
 
-For the demo we keep PT5M and stay under ~200k PPO steps; throughput is ~740 steps/s.
-
-```powershell
-az servicebus queue update -g aks-ai-demo --namespace-name aidemo-sb-m23gd3 `
-  --name rl-jobs --lock-duration PT5M
-az servicebus queue update -g aks-ai-demo --namespace-name aidemo-sb-m23gd3 `
-  --name forecast-jobs --lock-duration PT5M
-```
+As a fallback for very long training runs, keep job size bounded. On the demo cluster PPO does ≈ 740 steps/s.
 
 ## 3. `helm --reuse-values` strips GPU resources
 
