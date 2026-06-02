@@ -20,7 +20,7 @@ Installed by `scripts/install-monitoring.ps1` into the `monitoring` namespace.
 ## Grafana
 
 - LoadBalancer service, anonymous Viewer enabled, embeddable in iframes.
-- Default credentials configured by chart (`admin / prom-operator`).
+- Default credentials set in `deploy/monitoring/values-kps.yaml` (`admin / admin`).
 - The web UI's dashboard page embeds Grafana panels via the `web.grafanaUrl` value.
 
 ## ServiceMonitors (chart)
@@ -37,34 +37,35 @@ DCGM exporter has its own ServiceMonitor in the `monitoring` namespace.
 
 ## Application metrics
 
-From `src/common/metrics.py`:
+From `src/common/metrics.py` and `src/devices/simulator.py`:
 
 | Metric | Type | Labels |
 |--------|------|--------|
-| `job_total` | Counter | `type`, `status` |
-| `job_duration_seconds` | Histogram | `type` |
-| `device_indoor_c` | Gauge | `device_id` |
-| `device_outdoor_c` | Gauge | `device_id` |
-| `device_occupants` | Gauge | `device_id` |
-| `device_energy_w` | Gauge | `device_id` |
-| `telemetry_total` | Counter | `device_id` |
-| `forecast_mape` | Gauge | `dataset` |
-| `rl_mean_reward` | Gauge | `algo` |
+| `aidemo_job_total` | Counter | `job_type`, `status` |
+| `aidemo_job_duration_seconds` | Histogram | `job_type` |
+| `aidemo_job_inflight` | Gauge | `job_type` |
+| `aidemo_forecast_mape` | Gauge | `dataset` |
+| `aidemo_rl_mean_reward` | Gauge | `algo` |
+| `aidemo_device_indoor_temp_c` | Gauge | `device_id` |
+| `aidemo_device_outdoor_temp_c` | Gauge | `device_id` |
+| `aidemo_device_occupants` | Gauge | `device_id` |
+| `aidemo_device_energy_w` | Gauge | `device_id` |
+| `aidemo_device_telemetry_total` | Counter | `device_id` |
 
 ## Sample queries
 
 ```promql
 # Job throughput last 5 min
-sum by (type, status) (rate(job_total[5m]))
+sum by (job_type, status) (rate(aidemo_job_total[5m]))
 
 # A100 utilization
 DCGM_FI_DEV_GPU_UTIL{Hostname=~"aks-gpurecon-.*"}
 
 # Telemetry rate per device
-rate(telemetry_total[1m])
+rate(aidemo_device_telemetry_total[1m])
 
 # Recent forecast accuracy
-forecast_mape{dataset="dev-000"}
+aidemo_forecast_mape{dataset="dev-000"}
 ```
 
 ## Endpoints

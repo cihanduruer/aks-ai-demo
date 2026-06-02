@@ -63,7 +63,7 @@ PG*                        # same as API
 
 ### Prometheus metrics
 
-`device_indoor_c{device_id}`, `device_outdoor_c`, `device_occupants`, `device_energy_w`, `telemetry_total`.
+`aidemo_device_indoor_temp_c{device_id}`, `aidemo_device_outdoor_temp_c{device_id}`, `aidemo_device_occupants{device_id}`, `aidemo_device_energy_w{device_id}`, `aidemo_device_telemetry_total{device_id}`.
 
 ## src/forecast — Chronos-2 worker
 
@@ -74,8 +74,8 @@ PG*                        # same as API
 
 Loop driven by `common.dispatcher.run("forecast", FORECAST_QUEUE, handle)`:
 
-1. Receive message in PEEK_LOCK mode.
-2. Load Chronos pipeline (`amazon/chronos-2` by default).
+1. Receive message in PEEK_LOCK mode (lock auto-renewed by `AutoLockRenewer` in `dispatcher.py`).
+2. Load Chronos pipeline (`amazon/chronos-2` by default; falls back to `amazon/chronos-bolt-small`).
 3. Pull either the in-message `context` series or generate a synthetic one.
 4. Generate quantile forecast for `horizon` steps, take the median.
 5. Optional MAPE against a holdout slice.
@@ -122,14 +122,13 @@ PG*, AZURE_CLIENT_ID, AZURE_TENANT_ID
 
 ### Throughput note
 
-Measured on the demo cluster: PPO ≈ **740 steps/sec** on a time-sliced A100. Combined with Service Bus's 5-minute lock cap, that means a single message must complete within ≈ **220 000 steps**. Larger jobs need `AutoLockRenewer` in `dispatcher.py` (see [operations.md](operations.md)).
+Measured on the demo cluster: PPO ≈ **740 steps/sec** on a time-sliced A100. `AutoLockRenewer` in `dispatcher.py` keeps the Service Bus lock alive for as long as the job runs (up to `LOCK_RENEW_MAX_SECONDS`, default 4 h), so job size is not bounded by the PT5M lock cap.
 
 ## src/common — Shared library
 
 | Module | Responsibility |
 |--------|----------------|
 | `db.py` | Postgres connection (AAD token via `DefaultAzureCredential` or PGPASSWORD), schema bootstrap, all CRUD helpers |
-| `dispatcher.py` | Generic Service Bus PEEK_LOCK loop with handler injection, status transitions, metrics, idle exit |
-| `metrics.py` | Prometheus counters/histograms (`JOB_TOTAL`, `JOB_DURATION`, device gauges, etc.) |
-| `logging_setup.py` | Structured JSON logger via `python-json-logger` |
-| `auth.py` | Helpers around `DefaultAzureCredential` and AAD token acquisition for Postgres |
+| `dispatcher.py` | Generic Service Bus PEEK_LOCK loop with handler injection, `AutoLockRenewer` for long jobs, status transitions, metrics, idle exit |
+| `metrics.py` | Prometheus counters/histograms (`JOB_TOTAL`, `JOB_DURATION`, `JOB_INFLIGHT`, `FORECAST_MAPE`, `RL_MEAN_REWARD`) |
+| `logging_setup.py` | Structured JSON logger using a custom `JsonFormatter` (stdlib `logging` only) |

@@ -77,12 +77,11 @@ The UI's `/jobs` table polls `/jobs?limit=50` every few seconds while any job is
 | `forecast-jobs` | `PT5M` | 5 | `PT2H` | yes |
 | `rl-jobs` | `PT5M` | 3 | `PT2H` | yes |
 
-`PT5M` is the **maximum** Service Bus allows. If a worker takes longer than 5 min to call `complete_message`, the lock is lost and the message is redelivered (and the original `complete_message` call raises `MessageLockLostError`).
+`PT5M` is the **maximum** Service Bus `lockDuration`. `dispatcher.py` wraps every received message with `AutoLockRenewer(max_lock_renewal_duration=LOCK_RENEW_MAX_SECONDS)` (default 4 h), so the lock is automatically renewed and jobs can run well beyond PT5M without hitting `MessageLockLostError`.
 
-### Mitigations for long-running jobs
+### Long-running jobs
 
-1. **Recommended**: wrap the receiver with `azure.servicebus.AutoLockRenewer(max_lock_renewal_duration=4*3600)` in `dispatcher.py`. Renews the lock in a background thread for as long as needed. Requires rebuilding the `aidemo/forecast` and `aidemo/rl` images (they share `src/common/dispatcher.py`).
-2. **Fallback**: keep job size bounded. On the demo cluster PPO does ≈ 740 steps/s, so ≤ ~200 000 steps is a safe demo size.
+`AutoLockRenewer` is already active in `src/common/dispatcher.py`; no per-worker changes are needed. The only practical limit is the `LOCK_RENEW_MAX_SECONDS` environment variable (default 14 400 s / 4 h). Increase it for extremely long training runs.
 
 ## KEDA scaling
 

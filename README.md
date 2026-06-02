@@ -54,6 +54,19 @@ python -m cli.submit both --count 5
 KEDA will scale `forecast-worker` (A100 pool) and `rl-worker` (CPU pool) from
 0 to N pods based on queue depth, then back to 0 when idle.
 
+## CI / CD (GitHub Actions)
+
+Four workflows live under `.github/workflows/` and use OIDC (passwordless) authentication to Azure:
+
+| Workflow | Trigger | What it does |
+|---------|---------|--------------|
+| `ci.yml` | push / PR to `main` | Python lint (ruff) + smoke tests, web `npm ci && npm run build`, `helm lint && helm template` |
+| `images.yml` | push to `main` (path-filtered) or manual | Builds and pushes only the changed images to ACR |
+| `deploy.yml` | manual (`workflow_dispatch`) | `helm upgrade --reuse-values` against AKS |
+| `terraform.yml` | PR touching `infra/**`, or manual | `fmt → validate → plan` (and `apply` on dispatch) |
+
+See [`.github/README.md`](.github/README.md) for setup instructions.
+
 ## Observability
 
 * Prometheus: `kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090`
