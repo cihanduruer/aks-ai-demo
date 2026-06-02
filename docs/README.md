@@ -28,6 +28,18 @@ End-to-end Azure / AKS demo that combines:
 | [reference.md](reference.md) | Environment variable matrix, endpoints, scripts, tests |
 | [../.github/README.md](../.github/README.md) | GitHub Actions workflows (CI, image build, AKS deploy, Terraform) |
 
+## Read by task
+
+| If you want to... | Read this first |
+|-------------------|-----------------|
+| Understand system flow and design decisions | [architecture.md](architecture.md) |
+| Deploy from scratch in Azure | [deployment.md](deployment.md) |
+| Operate and troubleshoot a live cluster | [operations.md](operations.md) |
+| Tune service-level environment variables | [services.md](services.md) + [reference.md](reference.md) |
+| Update Helm values/templates | [helm-chart.md](helm-chart.md) |
+| Understand data persisted in PostgreSQL | [data-model.md](data-model.md) |
+| Work on the dashboard UI | [web-app.md](web-app.md) |
+
 ## Live endpoints
 
 | Service | URL |
