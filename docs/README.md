@@ -1,5 +1,7 @@
 # aks-ai-demo — Documentation
 
+The deployed agent in this AKS-hosted AI operations demo simulates HVAC devices, queues forecast and reinforcement-learning workloads via Service Bus/KEDA, and visualizes results through a FastAPI-backed Next.js dashboard.
+
 End-to-end Azure / AKS demo that combines:
 
 - A **fleet of simulated HVAC devices** producing realtime telemetry into PostgreSQL.
