@@ -4,6 +4,13 @@ Two AI workloads on AKS, queued via Azure Service Bus, autoscaled with KEDA,
 observed with Prometheus + Grafana, results in PostgreSQL, all visualized in a
 Next.js + shadcn/ui dashboard.
 
+## Start here
+
+- New to the project? Read the docs index: [`docs/README.md`](docs/README.md).
+- Need a full deployment flow? Go straight to [`docs/deployment.md`](docs/deployment.md).
+- Need runbooks and troubleshooting? See [`docs/operations.md`](docs/operations.md).
+- Need environment variables, scripts, and test commands? See [`docs/reference.md`](docs/reference.md).
+
 ## Components
 
 | Component | Path | What it does |
@@ -40,6 +47,13 @@ terraform -chdir=infra/terraform apply tfplan
 
 # 5) Open the dashboard
 kubectl -n aks-ai-demo get svc aidemo-web    # external IP
+```
+
+After deployment, verify core workloads are healthy:
+
+```powershell
+kubectl -n aks-ai-demo get pods
+kubectl -n monitoring get pods
 ```
 
 ## Run a demo
