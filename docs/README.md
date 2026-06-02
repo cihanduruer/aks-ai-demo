@@ -1,6 +1,6 @@
 # aks-ai-demo — Documentation
 
-The deployed agent at http://52.142.236.176 is an AKS-hosted AI operations demo that simulates HVAC devices, queues forecast and reinforcement-learning workloads via Service Bus/KEDA, and visualizes results through a FastAPI-backed Next.js dashboard.
+The deployed agent in this AKS-hosted AI operations demo simulates HVAC devices, queues forecast and reinforcement-learning workloads via Service Bus/KEDA, and visualizes results through a FastAPI-backed Next.js dashboard.
 
 End-to-end Azure / AKS demo that combines:
 
