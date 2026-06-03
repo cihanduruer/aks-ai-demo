@@ -16,35 +16,44 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from azure.identity import DefaultAzureCredential
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from common import db
 
 app = FastAPI(title="aks-ai-demo")
+
+_cors_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+_cors_origins: list[str] = (
+    [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
+    if _cors_origins_env
+    else ["*"]
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
 )
 app.mount("/metrics", make_asgi_app())
 
 
 class ForecastReq(BaseModel):
     device_id: str
-    horizon: int = 24
-    num_samples: int = 20
+    horizon: int = Field(default=24, ge=1, le=168)
+    num_samples: int = Field(default=20, ge=1, le=100)
 
 
 class RlReq(BaseModel):
-    algo: str = "PPO"
-    total_steps: int = 20000
-    learning_rate: float = 3e-4
+    algo: Literal["PPO", "DQN"] = "PPO"
+    total_steps: int = Field(default=20000, ge=1000, le=10_000_000)
+    learning_rate: float = Field(default=3e-4, gt=0.0, le=1.0)
     seed: int | None = None
 
 
@@ -324,6 +333,7 @@ def cluster_gpu() -> dict[str, Any]:
                 "state": state_name,
                 "detail": detail,
             })
+        schedule_reason, schedule_message = _pod_schedule_status(p)
         pods.append({
             "name": p.metadata.name,
             "app": (p.metadata.labels or {}).get("app", ""),
@@ -331,8 +341,8 @@ def cluster_gpu() -> dict[str, Any]:
             "node": p.spec.node_name or "",
             "created_at": p.metadata.creation_timestamp.isoformat() if p.metadata.creation_timestamp else None,
             "started_at": p.status.start_time.isoformat() if p.status.start_time else None,
-            "schedule_reason": _pod_schedule_status(p)[0],
-            "schedule_message": _pod_schedule_status(p)[1],
+            "schedule_reason": schedule_reason,
+            "schedule_message": schedule_message,
             "containers": ctrs,
         })
 
