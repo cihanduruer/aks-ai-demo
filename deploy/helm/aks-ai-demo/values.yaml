@@ -90,6 +90,10 @@ api:
   image:
     repo: aidemo/api
     tag: "0.1.2"
+  # Comma-separated list of allowed CORS origins for the API.
+  # Leave empty to allow all origins (suitable for local dev / demos only).
+  # Example: "https://my-dashboard.example.com"
+  corsAllowedOrigins: ""
   service:
     type: ClusterIP
     port: 8000
